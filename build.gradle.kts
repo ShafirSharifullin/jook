@@ -2,9 +2,13 @@ plugins {
     kotlin("jvm") version "1.6.10"
     kotlin("plugin.spring") version "1.6.10"
     id("nu.studer.jooq") version "7.1.1"
+    id("org.flywaydb.flyway") version "9.2.1"
 }
 
-ext["jooq.version"] = jooq.version.get()
+val spring_boot_version: String by System.getProperties()
+val db_url: String by System.getProperties()
+val db_username: String by System.getProperties()
+val db_password: String by System.getProperties()
 
 group = "pro.siberian"
 
@@ -16,7 +20,7 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:2.6.3"))
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:${spring_boot_version}"))
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -26,12 +30,10 @@ dependencies {
     jooqGenerator("org.postgresql:postgresql:42.5.0")
 
     runtimeOnly("org.postgresql:postgresql")
-    testImplementation("org.testcontainers:postgresql:1.16.3")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 jooq {
-//    version.set("3.16.4") // the default (can be omitted)
     edition.set(nu.studer.gradle.jooq.JooqEdition.OSS) // the default (can be omitted)
 
     configurations {
@@ -42,9 +44,9 @@ jooq {
                 logging = org.jooq.meta.jaxb.Logging.WARN
                 jdbc.apply {
                     driver = "org.postgresql.Driver"
-                    url = "jdbc:postgresql://localhost:5432/palace"
-                    user = "root"
-                    password = "12345"
+                    url = db_url
+                    user = db_username
+                    password = db_password
                     properties.add(org.jooq.meta.jaxb.Property().apply {
                         key = "ssl"
                         value = "false"
@@ -85,12 +87,20 @@ jooq {
     }
 }
 
-tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq") { allInputsDeclared.set(true) }
+flyway {
+    url = db_url
+    user = db_username
+    password = db_password
+    schemas = arrayOf("public")
+    locations = arrayOf("classpath:db/migration")
+}
 
-buildscript {
-    configurations["classpath"].resolutionStrategy.eachDependency {
-        if (requested.group == "org.jooq") {
-            useVersion("3.16.1")
-        }
-    }
+tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq").configure {
+    dependsOn(tasks.named("flywayMigrate"))
+
+    inputs.files(fileTree("src/main/resources/db/migration"))
+        .withPropertyName("migrations")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+
+    allInputsDeclared.set(true)
 }
