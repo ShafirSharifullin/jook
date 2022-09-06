@@ -19,7 +19,7 @@ CREATE TABLE "employees"
     status     VARCHAR NOT NULL,
     salary     BIGINT  NOT NULL,
     year_birth INTEGER NOT NULL,
-    company_id BIGINT  NOT NULL,
+    company_id INTEGER NOT NULL,
     PRIMARY KEY (id),
     FOREIGN KEY (company_id) REFERENCES "companies" (id)
 );

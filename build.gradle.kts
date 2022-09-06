@@ -1,8 +1,10 @@
 plugins {
     kotlin("jvm") version "1.6.10"
     kotlin("plugin.spring") version "1.6.10"
+    id("org.springframework.boot") version "2.6.3"
+    id("io.spring.dependency-management") version "1.0.13.RELEASE"
     id("nu.studer.jooq") version "7.1.1"
-    id("org.flywaydb.flyway") version "9.2.1"
+    id("org.flywaydb.flyway") version "9.2.2"
 }
 
 val spring_boot_version: String by System.getProperties()
@@ -20,17 +22,28 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:${spring_boot_version}"))
     implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.flywaydb:flyway-core")
 
     implementation("org.springframework.boot:spring-boot-starter-jooq")
+    jooqGenerator("jakarta.xml.bind:jakarta.xml.bind-api:4.0.0")
     jooqGenerator("org.postgresql:postgresql:42.5.0")
 
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs = listOf("-Xjsr305=strict")
+        jvmTarget = "15"
+    }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 
 jooq {
@@ -92,7 +105,7 @@ flyway {
     user = db_username
     password = db_password
     schemas = arrayOf("public")
-    locations = arrayOf("classpath:db/migration")
+    baselineOnMigrate = true
 }
 
 tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq").configure {

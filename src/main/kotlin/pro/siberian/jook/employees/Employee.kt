@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table
 data class Employee(
 
     @Id
-    val id: Long,
+    val id: Int,
 
     val name: String,
 
