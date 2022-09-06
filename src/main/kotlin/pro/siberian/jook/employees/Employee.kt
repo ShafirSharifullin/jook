@@ -15,7 +15,7 @@ data class Employee(
 
     val status: String,
 
-    val salary: Int,
+    val salary: Long,
 
     @Column("year_birth")
     val yearBirth: Int,
