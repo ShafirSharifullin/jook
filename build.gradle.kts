@@ -29,7 +29,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     jooqGenerator("jakarta.xml.bind:jakarta.xml.bind-api:4.0.0")
-    jooqGenerator("org.postgresql:postgresql:42.5.0")
+    jooqGenerator("org.jooq:jooq-meta-extensions:3.17.4")
 
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -51,37 +51,17 @@ jooq {
 
     configurations {
         create("main") {  // name of the jOOQ configuration
-            generateSchemaSourceOnCompilation.set(true)  // default (can be omitted)
-
             jooqConfiguration.apply {
                 logging = org.jooq.meta.jaxb.Logging.WARN
-                jdbc.apply {
-                    driver = "org.postgresql.Driver"
-                    url = db_url
-                    user = db_username
-                    password = db_password
-                    properties.add(org.jooq.meta.jaxb.Property().apply {
-                        key = "ssl"
-                        value = "false"
-                    })
-                }
+
                 generator.apply {
-                    name = "org.jooq.codegen.DefaultGenerator"
                     database.apply {
-                        name = "org.jooq.meta.postgres.PostgresDatabase"
-                        inputSchema = "public"
-                        forcedTypes.addAll(listOf(
-                            org.jooq.meta.jaxb.ForcedType().apply {
-                                name = "varchar"
-                                includeExpression = ".*"
-                                includeTypes = "JSONB?"
-                            },
-                            org.jooq.meta.jaxb.ForcedType().apply {
-                                name = "varchar"
-                                includeExpression = ".*"
-                                includeTypes = "INET"
-                            }
-                        ))
+                        name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+
+                        properties.add(org.jooq.meta.jaxb.Property().apply {
+                            key = "scripts"
+                            value = "src/main/resources/db/migration/*.sql"
+                        })
                     }
                     generate.apply {
                         isDeprecated = false
@@ -93,27 +73,26 @@ jooq {
                         packageName = "pro.siberian.example"
                         directory = "build/generated-src/jooq/main"  // default (can be omitted)
                     }
-                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
                 }
             }
         }
     }
 }
 
-flyway {
-    url = db_url
-    user = db_username
-    password = db_password
-    schemas = arrayOf("public")
-    baselineOnMigrate = true
-}
-
-tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq").configure {
-    dependsOn(tasks.named("flywayMigrate"))
-
-    inputs.files(fileTree("src/main/resources/db/migration"))
-        .withPropertyName("migrations")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
-
-    allInputsDeclared.set(true)
-}
+//flyway {
+//    url = db_url
+//    user = db_username
+//    password = db_password
+//    schemas = arrayOf("public")
+//    baselineOnMigrate = true
+//}
+//
+//tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq").configure {
+//    dependsOn(tasks.named("flywayMigrate"))
+//
+//    inputs.files(fileTree("src/main/resources/db/migration"))
+//        .withPropertyName("migrations")
+//        .withPathSensitivity(PathSensitivity.RELATIVE)
+//
+//    allInputsDeclared.set(true)
+//}
