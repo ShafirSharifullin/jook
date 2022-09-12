@@ -1,6 +1,8 @@
 package pro.siberian.dynamicsql.companies
 
 import org.jooq.DSLContext
+import org.jooq.Records
+import org.jooq.impl.DSL
 import org.springframework.stereotype.Service
 import pro.siberian.dynamicsql.employees.Employee
 import pro.siberian.example.Tables
@@ -24,10 +26,23 @@ class CompanyService(private val companyRepo: CompanyRepository, private val dsl
         val employees = Tables.EMPLOYEES
 
         val dsl = dslContext
-            .select(companies.ID, companies.NAME, companies.DATE_CREATE)
+            .select(
+                companies.ID,
+                companies.NAME,
+                companies.DATE_CREATE,
+                DSL.multiset(
+                    DSL.select(
+                        employees.ID,
+                        employees.NAME,
+                        employees.STATUS,
+                        employees.SALARY,
+                        employees.YEAR_BIRTH,
+                        employees.COMPANY_ID
+                    ).from(employees).where(employees.COMPANY_ID.eq(companies.ID))
+                )
+                    .convertFrom { r -> r.into(Employee::class.java) }
+            )
             .from(companies)
-            .leftJoin(employees)
-            .on(companies.ID.eq(employees.COMPANY_ID))
 
         if (name != null)
             dsl.where(companies.NAME.containsIgnoreCase(name))
@@ -50,15 +65,7 @@ class CompanyService(private val companyRepo: CompanyRepository, private val dsl
         }
 
         return dsl
-            .fetch()
-            .map { r ->
-                val company: Company = r.into(Company::class.java)
-                company.copy(employees = dslContext
-                    .select()
-                    .from(employees)
-                    .where(employees.COMPANY_ID.eq(company.id)).fetch()
-                    .map { r2 -> r2.into(Employee::class.java) })
-            }.toSet()
+            .fetch(Records.mapping(::Company)).toSet()
     }
 
     fun findAll() = companyRepo.findAll().toList()
