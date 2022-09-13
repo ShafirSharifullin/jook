@@ -4,7 +4,6 @@ plugins {
     id("org.springframework.boot") version "2.6.3"
     id("io.spring.dependency-management") version "1.0.13.RELEASE"
     id("nu.studer.jooq") version "7.1.1"
-    id("org.flywaydb.flyway") version "9.2.2"
 }
 
 val spring_boot_version: String by System.getProperties()
@@ -73,26 +72,10 @@ jooq {
                         packageName = "pro.siberian.example"
                         directory = "build/generated-src/jooq/main"  // default (can be omitted)
                     }
+
+                    strategy.name = "org.jooq.codegen.DefaultGeneratorStrategy"
                 }
             }
         }
     }
 }
-
-//flyway {
-//    url = db_url
-//    user = db_username
-//    password = db_password
-//    schemas = arrayOf("public")
-//    baselineOnMigrate = true
-//}
-//
-//tasks.named<nu.studer.gradle.jooq.JooqGenerate>("generateJooq").configure {
-//    dependsOn(tasks.named("flywayMigrate"))
-//
-//    inputs.files(fileTree("src/main/resources/db/migration"))
-//        .withPropertyName("migrations")
-//        .withPathSensitivity(PathSensitivity.RELATIVE)
-//
-//    allInputsDeclared.set(true)
-//}
